@@ -6,6 +6,7 @@ from slowapi.util import get_remote_address
 from app.db.session import get_db
 from app.models.widget import Widget
 from app.schemas.submission import SubmissionCreate, SubmissionResponse
+from app.services.geo_service import enrich_ip_address
 from app.services.submission_service import process_submission
 
 
@@ -64,6 +65,8 @@ def create_public_submission(
 
     client_ip = request.client.host if request.client else None
 
+    country, city = enrich_ip_address(client_ip)
+
     saved_submission, created = process_submission(
         db=db,
         widget_id=widget.id,
@@ -71,6 +74,8 @@ def create_public_submission(
         idempotency_key=idempotency_key,
         payload=submission.payload,
         ip_address=client_ip,
+        country=country,
+        city=city,
     )
 
     if not created:
