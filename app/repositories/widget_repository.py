@@ -57,6 +57,34 @@ def create_widget(
     return widget
 
 
+def update_widget(
+    db: Session,
+    widget: Widget,
+    widget_type: str,
+    title: str,
+    description: str | None,
+    form_fields: dict,
+    button_text: str,
+    display_options: dict,
+    is_active: bool,
+) -> Widget:
+    widget.widget_type = widget_type
+    widget.title = title
+    widget.description = description
+    widget.form_fields = form_fields
+    widget.button_text = button_text
+    widget.display_options = display_options
+    widget.is_active = is_active
+
+    # Increment the widget configuration version
+    widget.version += 1
+
+    db.commit()
+    db.refresh(widget)
+
+    return widget
+
+
 def delete_widget(
     db: Session,
     widget: Widget,

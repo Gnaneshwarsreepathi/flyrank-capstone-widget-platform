@@ -6,6 +6,7 @@ from app.repositories.widget_repository import (
     delete_widget,
     get_widget_by_id,
     get_widgets_by_tenant,
+    update_widget,
 )
 
 
@@ -55,23 +56,35 @@ def create_new_widget(
     )
 
 
-def remove_widget(
+def update_existing_widget(
     db: Session,
-    widget_id: int,
-    tenant_id: int,
-) -> bool:
-    widget = get_widget_by_id(
+    widget: Widget,
+    widget_type: str,
+    title: str,
+    description: str | None,
+    form_fields: dict,
+    button_text: str,
+    display_options: dict,
+    is_active: bool,
+) -> Widget:
+    return update_widget(
         db=db,
-        widget_id=widget_id,
-        tenant_id=tenant_id,
+        widget=widget,
+        widget_type=widget_type,
+        title=title,
+        description=description,
+        form_fields=form_fields,
+        button_text=button_text,
+        display_options=display_options,
+        is_active=is_active,
     )
 
-    if not widget:
-        return False
 
+def remove_widget(
+    db: Session,
+    widget: Widget,
+) -> None:
     delete_widget(
         db=db,
         widget=widget,
     )
-
-    return True
