@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -13,23 +14,27 @@ from app.api.widgets import router as widgets_router
 from app.core.config import settings
 
 
+# Maximum allowed HTTP request body size: 64 KB
 MAX_REQUEST_SIZE = 64 * 1024
 
-limiter = Limiter(
-    key_func=get_remote_address,
-)
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 
 app = FastAPI(
     title="FlyRank Capstone Widget Platform",
     version="1.0.0",
-    description="Embeddable widget and lead-capture platform for the FlyRank capstone.",
+    description=(
+        "Embeddable widget and lead-capture platform "
+        "for the FlyRank capstone."
+    ),
 )
 
 
-# -------------------------------------------------------------------
-# Rate limiting
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
+# Application state
+# ---------------------------------------------------------
 
 app.state.limiter = limiter
 
@@ -39,9 +44,9 @@ app.add_exception_handler(
 )
 
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
 # CORS
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,9 +61,9 @@ app.add_middleware(
 )
 
 
-# -------------------------------------------------------------------
-# Request size protection
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
+# Request body size protection
+# ---------------------------------------------------------
 
 @app.middleware("http")
 async def request_size_limit(request: Request, call_next):
@@ -85,14 +90,11 @@ async def request_size_limit(request: Request, call_next):
     return await call_next(request)
 
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
 # Health check
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
 
-@app.get(
-    "/health",
-    tags=["Health"],
-)
+@app.get("/health", tags=["Health"])
 def health_check():
     return {
         "status": "ok",
@@ -100,14 +102,22 @@ def health_check():
     }
 
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
+# Embeddable widget JavaScript
+# ---------------------------------------------------------
+
+app.mount(
+    "/widget",
+    StaticFiles(directory="widget"),
+    name="widget",
+)
+
+
+# ---------------------------------------------------------
 # API routers
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
 
 app.include_router(auth_router)
-
 app.include_router(widgets_router)
-
 app.include_router(submissions_router)
-
 app.include_router(dashboard_router)

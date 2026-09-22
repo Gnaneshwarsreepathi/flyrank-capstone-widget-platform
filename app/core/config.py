@@ -12,15 +12,18 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
-    cors_origins: str = "http://localhost:8000,http://localhost:5500"
+    cors_origins: str = (
+        "http://localhost:8000,"
+        "http://localhost:5500"
+    )
 
-    geo_provider_a_url: str = ""
-    geo_provider_a_api_key: str = ""
+    geo_provider_a_url: str | None = None
+    geo_provider_a_api_key: str | None = None
 
-    geo_provider_b_url: str = ""
-    geo_provider_b_api_key: str = ""
+    geo_provider_b_url: str | None = None
+    geo_provider_b_api_key: str | None = None
 
-    webhook_url: str = ""
+    webhook_url: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

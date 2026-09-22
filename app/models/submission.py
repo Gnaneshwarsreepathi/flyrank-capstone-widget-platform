@@ -1,6 +1,12 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String, UniqueConstraint
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    JSON,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -23,13 +29,19 @@ class Submission(Base):
     )
 
     widget_id: Mapped[int] = mapped_column(
-        ForeignKey("widgets.id", ondelete="CASCADE"),
+        ForeignKey(
+            "widgets.id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
         index=True,
     )
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"),
+        ForeignKey(
+            "tenants.id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
         index=True,
     )

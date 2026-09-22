@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_tenant
@@ -22,16 +23,14 @@ router = APIRouter(
 )
 
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
 # Public widget configuration
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
 
-@router.get(
-    "/{widget_id}/config",
-    response_model=WidgetConfigResponse,
-)
+@router.get("/{widget_id}/config")
 def get_public_config(
     widget_id: int,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     widget = get_public_widget_config(
@@ -41,16 +40,39 @@ def get_public_config(
 
     if not widget:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=404,
             detail="Widget not found or inactive",
         )
 
-    return widget
+    # ETag changes whenever the widget version changes.
+    etag = f'"widget-{widget.id}-v{widget.version}"'
+
+    headers = {
+        "Cache-Control": "public, max-age=60, must-revalidate",
+        "ETag": etag,
+    }
+
+    # Client already has the current version.
+    if request.headers.get("if-none-match") == etag:
+        return Response(
+            status_code=304,
+            headers=headers,
+        )
+
+    # Return the public widget configuration as JSON.
+    config = WidgetConfigResponse.model_validate(widget)
+
+    return Response(
+        content=config.model_dump_json(),
+        status_code=200,
+        media_type="application/json",
+        headers=headers,
+    )
 
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
 # Tenant widget management
-# -------------------------------------------------------------------
+# ---------------------------------------------------------
 
 @router.get(
     "",
@@ -83,7 +105,7 @@ def get_single_widget(
 
     if not widget:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=404,
             detail="Widget not found",
         )
 
@@ -93,7 +115,7 @@ def get_single_widget(
 @router.post(
     "",
     response_model=WidgetResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=201,
 )
 def create(
     request: WidgetCreate,
@@ -131,7 +153,7 @@ def update(
 
     if not widget:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=404,
             detail="Widget not found",
         )
 
@@ -150,7 +172,7 @@ def update(
 
 @router.delete(
     "/{widget_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=204,
 )
 def delete(
     widget_id: int,
@@ -165,7 +187,7 @@ def delete(
 
     if not widget:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=404,
             detail="Widget not found",
         )
 

@@ -11,11 +11,15 @@
   }
 
   const widgetId = script.getAttribute("data-widget-id");
+
   const apiBase =
-    script.getAttribute("data-api-base") || "http://127.0.0.1:8000";
+    script.getAttribute("data-api-base") ||
+    "http://127.0.0.1:8000";
 
   if (!widgetId) {
-    console.error("FlyRank Widget: data-widget-id is required.");
+    console.error(
+      "FlyRank Widget: data-widget-id is required."
+    );
     return;
   }
 
@@ -26,10 +30,13 @@
       );
 
       if (!response.ok) {
-        throw new Error(`Widget config request failed: ${response.status}`);
+        throw new Error(
+          `Widget config request failed: ${response.status}`
+        );
       }
 
       const config = await response.json();
+
       renderWidget(config);
     } catch (error) {
       console.error("FlyRank Widget:", error);
@@ -47,20 +54,25 @@
     container.style.border = "1px solid #ddd";
     container.style.borderRadius = "12px";
     container.style.background = "#fff";
-    container.style.fontFamily =
-      "Arial, sans-serif";
+    container.style.fontFamily = "Arial, sans-serif";
     container.style.boxShadow =
       "0 4px 12px rgba(0, 0, 0, 0.08)";
 
     const title = document.createElement("h2");
-    title.textContent = config.title || "Contact Us";
+
+    title.textContent =
+      config.title || "Contact Us";
+
     title.style.marginTop = "0";
 
     container.appendChild(title);
 
     if (config.description) {
       const description = document.createElement("p");
-      description.textContent = config.description;
+
+      description.textContent =
+        config.description;
+
       container.appendChild(description);
     }
 
@@ -68,104 +80,209 @@
 
     const fields = config.form_fields || {};
 
-    Object.entries(fields).forEach(([fieldName, fieldConfig]) => {
-      const wrapper = document.createElement("div");
-      wrapper.style.marginBottom = "14px";
+    Object.entries(fields).forEach(
+      ([fieldName, fieldConfig]) => {
+        const wrapper =
+          document.createElement("div");
 
-      const label = document.createElement("label");
-      label.textContent =
-        fieldConfig.label || fieldName;
-      label.style.display = "block";
-      label.style.marginBottom = "6px";
+        wrapper.style.marginBottom = "14px";
 
-      const input = document.createElement("input");
+        const label =
+          document.createElement("label");
 
-      input.name = fieldName;
-      input.type = fieldConfig.type || "text";
-      input.required = Boolean(fieldConfig.required);
+        label.textContent =
+          fieldConfig.label || fieldName;
 
-      input.style.width = "100%";
-      input.style.boxSizing = "border-box";
-      input.style.padding = "10px";
-      input.style.border = "1px solid #ccc";
-      input.style.borderRadius = "6px";
+        label.style.display = "block";
+        label.style.marginBottom = "6px";
 
-      wrapper.appendChild(label);
-      wrapper.appendChild(input);
-      form.appendChild(wrapper);
-    });
+        const input =
+          document.createElement("input");
 
-    const submitButton = document.createElement("button");
+        input.name = fieldName;
+
+        input.type =
+          fieldConfig.type || "text";
+
+        input.required =
+          Boolean(fieldConfig.required);
+
+        input.style.width = "100%";
+        input.style.boxSizing = "border-box";
+        input.style.padding = "10px";
+        input.style.border = "1px solid #ccc";
+        input.style.borderRadius = "6px";
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(input);
+
+        form.appendChild(wrapper);
+      }
+    );
+
+    /*
+     * Honeypot spam protection.
+     *
+     * Normal users should never fill this field.
+     * Automated bots may populate it because it exists
+     * in the DOM. The backend rejects submissions when
+     * this value is not empty.
+     */
+    const honeypotWrapper =
+      document.createElement("div");
+
+    honeypotWrapper.style.position = "absolute";
+    honeypotWrapper.style.left = "-9999px";
+    honeypotWrapper.style.width = "1px";
+    honeypotWrapper.style.height = "1px";
+    honeypotWrapper.style.overflow = "hidden";
+
+    const honeypotLabel =
+      document.createElement("label");
+
+    honeypotLabel.textContent =
+      "Leave this field empty";
+
+    honeypotLabel.setAttribute(
+      "for",
+      `flyrank-honeypot-${widgetId}`
+    );
+
+    const honeypotInput =
+      document.createElement("input");
+
+    honeypotInput.type = "text";
+
+    honeypotInput.id =
+      `flyrank-honeypot-${widgetId}`;
+
+    honeypotInput.name = "website";
+
+    honeypotInput.autocomplete = "off";
+
+    honeypotInput.tabIndex = -1;
+
+    honeypotWrapper.appendChild(
+      honeypotLabel
+    );
+
+    honeypotWrapper.appendChild(
+      honeypotInput
+    );
+
+    form.appendChild(
+      honeypotWrapper
+    );
+
+    const submitButton =
+      document.createElement("button");
 
     submitButton.type = "submit";
+
     submitButton.textContent =
       config.button_text || "Submit";
 
-    submitButton.style.padding = "10px 18px";
+    submitButton.style.padding =
+      "10px 18px";
+
     submitButton.style.border = "none";
-    submitButton.style.borderRadius = "6px";
-    submitButton.style.cursor = "pointer";
 
-    form.appendChild(submitButton);
+    submitButton.style.borderRadius =
+      "6px";
 
-    const message = document.createElement("p");
+    submitButton.style.cursor =
+      "pointer";
 
-    message.style.marginTop = "14px";
+    form.appendChild(
+      submitButton
+    );
 
-    form.addEventListener("submit", async function (event) {
-      event.preventDefault();
+    const message =
+      document.createElement("p");
 
-      submitButton.disabled = true;
-      message.textContent = "Submitting...";
+    message.style.marginTop =
+      "14px";
 
-      const formData = new FormData(form);
-      const payload = {};
+    form.addEventListener(
+      "submit",
+      async function (event) {
+        event.preventDefault();
 
-      formData.forEach((value, key) => {
-        payload[key] = value;
-      });
+        submitButton.disabled = true;
 
-      try {
-        const response = await fetch(
-          `${apiBase}/submissions`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Idempotency-Key":
-                crypto.randomUUID(),
-            },
-            body: JSON.stringify({
-              widget_id: Number(widgetId),
-              payload: payload,
-            }),
+        message.textContent =
+          "Submitting...";
+
+        const formData =
+          new FormData(form);
+
+        const payload = {};
+
+        formData.forEach(
+          (value, key) => {
+            if (key !== "website") {
+              payload[key] = value;
+            }
           }
         );
 
-        if (!response.ok) {
-          throw new Error(
-            `Submission failed: ${response.status}`
+        const honeypot =
+          formData.get("website") || "";
+
+        try {
+          const response =
+            await fetch(
+              `${apiBase}/submissions`,
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json",
+
+                  "Idempotency-Key":
+                    crypto.randomUUID(),
+                },
+
+                body: JSON.stringify({
+                  widget_id:
+                    Number(widgetId),
+
+                  payload: payload,
+
+                  honeypot:
+                    honeypot,
+                }),
+              }
+            );
+
+          if (!response.ok) {
+            throw new Error(
+              `Submission failed: ${response.status}`
+            );
+          }
+
+          message.textContent =
+            "Thank you! Your submission was received.";
+
+          form.reset();
+        } catch (error) {
+          console.error(
+            "FlyRank Widget submission error:",
+            error
           );
+
+          message.textContent =
+            "Something went wrong. Please try again.";
+        } finally {
+          submitButton.disabled =
+            false;
         }
-
-        message.textContent =
-          "Thank you! Your submission was received.";
-
-        form.reset();
-      } catch (error) {
-        console.error(
-          "FlyRank Widget submission error:",
-          error
-        );
-
-        message.textContent =
-          "Something went wrong. Please try again.";
-      } finally {
-        submitButton.disabled = false;
       }
-    });
+    );
 
     container.appendChild(form);
+
     container.appendChild(message);
 
     script.parentNode.insertBefore(

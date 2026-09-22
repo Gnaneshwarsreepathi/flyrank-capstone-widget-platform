@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class WidgetConfigResponse(BaseModel):
@@ -11,3 +11,5 @@ class WidgetConfigResponse(BaseModel):
     display_options: dict
     version: int
     is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)

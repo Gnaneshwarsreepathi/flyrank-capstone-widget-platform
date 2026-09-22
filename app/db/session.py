@@ -22,10 +22,11 @@ class Base(DeclarativeBase):
 
 def get_db():
     db = SessionLocal()
+
     try:
         yield db
     finally:
         db.close()
 
 
-import app.models  # noqa: F401
+import app.models  # noqa: E402,F401
