@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.submission import Submission
@@ -42,3 +42,29 @@ def create_submission(
     db.refresh(submission)
 
     return submission
+
+
+def get_submissions_by_tenant(
+    db: Session,
+    tenant_id: int,
+    limit: int = 50,
+) -> list[Submission]:
+    statement = (
+        select(Submission)
+        .where(Submission.tenant_id == tenant_id)
+        .order_by(Submission.created_at.desc())
+        .limit(limit)
+    )
+
+    return list(db.execute(statement).scalars().all())
+
+
+def count_submissions_by_tenant(
+    db: Session,
+    tenant_id: int,
+) -> int:
+    statement = select(func.count(Submission.id)).where(
+        Submission.tenant_id == tenant_id
+    )
+
+    return db.execute(statement).scalar_one()

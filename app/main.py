@@ -1,19 +1,24 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from app.api.auth import router as auth_router
+from app.api.dashboard import router as dashboard_router
 from app.api.submissions import router as submissions_router
 from app.api.widgets import router as widgets_router
 from app.core.config import settings
 
 
-MAX_REQUEST_SIZE = 64 * 1024  # 64 KB
+MAX_REQUEST_SIZE = 64 * 1024
 
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(
+    key_func=get_remote_address,
+)
+
 
 app = FastAPI(
     title="FlyRank Capstone Widget Platform",
@@ -21,12 +26,22 @@ app = FastAPI(
     description="Embeddable widget and lead-capture platform for the FlyRank capstone.",
 )
 
+
+# -------------------------------------------------------------------
+# Rate limiting
+# -------------------------------------------------------------------
+
 app.state.limiter = limiter
+
 app.add_exception_handler(
     RateLimitExceeded,
     _rate_limit_exceeded_handler,
 )
 
+
+# -------------------------------------------------------------------
+# CORS
+# -------------------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,6 +56,10 @@ app.add_middleware(
 )
 
 
+# -------------------------------------------------------------------
+# Request size protection
+# -------------------------------------------------------------------
+
 @app.middleware("http")
 async def request_size_limit(request: Request, call_next):
     content_length = request.headers.get("content-length")
@@ -50,18 +69,30 @@ async def request_size_limit(request: Request, call_next):
             if int(content_length) > MAX_REQUEST_SIZE:
                 return JSONResponse(
                     status_code=413,
-                    content={"detail": "Request body is too large"},
+                    content={
+                        "detail": "Request body is too large"
+                    },
                 )
+
         except ValueError:
             return JSONResponse(
                 status_code=400,
-                content={"detail": "Invalid Content-Length header"},
+                content={
+                    "detail": "Invalid Content-Length header"
+                },
             )
 
     return await call_next(request)
 
 
-@app.get("/health", tags=["Health"])
+# -------------------------------------------------------------------
+# Health check
+# -------------------------------------------------------------------
+
+@app.get(
+    "/health",
+    tags=["Health"],
+)
 def health_check():
     return {
         "status": "ok",
@@ -69,6 +100,14 @@ def health_check():
     }
 
 
+# -------------------------------------------------------------------
+# API routers
+# -------------------------------------------------------------------
+
 app.include_router(auth_router)
+
 app.include_router(widgets_router)
+
 app.include_router(submissions_router)
+
+app.include_router(dashboard_router)
