@@ -1,0 +1,15 @@
+run: docker compose up --build
+
+seed: python -m app.db.seed
+
+test: pytest
+
+base_url: http://localhost:8000
+
+endpoints:
+  - /health
+  - /auth
+  - /widgets
+  - /widgets/{widget_id}/config
+  - /submissions
+  - /dashboard
