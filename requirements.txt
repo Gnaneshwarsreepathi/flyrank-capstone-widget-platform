@@ -12,3 +12,4 @@ email-validator
 python-multipart
 pytest
 pytest-asyncio
+bcrypt==4.0.1
