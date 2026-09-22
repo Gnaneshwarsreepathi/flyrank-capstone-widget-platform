@@ -1,12 +1,20 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.db.session import get_db
 from app.models.widget import Widget
 from app.schemas.submission import SubmissionCreate, SubmissionResponse
 from app.services.submission_service import process_submission
 
-router = APIRouter(prefix="/submissions", tags=["Submissions"])
+
+router = APIRouter(
+    prefix="/submissions",
+    tags=["Submissions"],
+)
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post(
@@ -14,6 +22,7 @@ router = APIRouter(prefix="/submissions", tags=["Submissions"])
     response_model=SubmissionResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("5/minute")
 def create_public_submission(
     request: Request,
     submission: SubmissionCreate,
@@ -38,10 +47,14 @@ def create_public_submission(
             detail="Spam detected",
         )
 
-    widget = db.query(Widget).filter(
-        Widget.id == submission.widget_id,
-        Widget.is_active.is_(True),
-    ).first()
+    widget = (
+        db.query(Widget)
+        .filter(
+            Widget.id == submission.widget_id,
+            Widget.is_active.is_(True),
+        )
+        .first()
+    )
 
     if not widget:
         raise HTTPException(

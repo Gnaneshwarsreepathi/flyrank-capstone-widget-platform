@@ -1,6 +1,9 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from app.api.auth import router as auth_router
 from app.api.submissions import router as submissions_router
@@ -10,11 +13,18 @@ from app.core.config import settings
 
 MAX_REQUEST_SIZE = 64 * 1024  # 64 KB
 
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="FlyRank Capstone Widget Platform",
     version="1.0.0",
     description="Embeddable widget and lead-capture platform for the FlyRank capstone.",
+)
+
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,
 )
 
 
